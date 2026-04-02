@@ -9,23 +9,6 @@ buildscript {
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
 task clean(type: Delete) {
     delete rootProject.buildDir
-}
-
-// Prevent repository conflicts
-gradle.projectsLoaded {
-    rootProject.allprojects {
-        project.buildscript.repositories {
-            google()
-            mavenCentral()
-        }
-    }
 }
