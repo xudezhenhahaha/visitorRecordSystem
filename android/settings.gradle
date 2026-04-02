@@ -14,5 +14,10 @@ dependencyResolutionManagement {
 }
 rootProject.name = "VisitorRecord"
 include ':app'
-include ':capacitor-cordova-android-plugins'
-project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
+
+// Only include capacitor-cordova-android-plugins if the directory exists
+def cordovaPluginsDir = new File('./capacitor-cordova-android-plugins/')
+if (cordovaPluginsDir.exists()) {
+    include ':capacitor-cordova-android-plugins'
+    project(':capacitor-cordova-android-plugins').projectDir = cordovaPluginsDir
+}
