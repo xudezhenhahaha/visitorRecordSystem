@@ -226,21 +226,32 @@ function renderSchedule() {
       const td = document.createElement('td');
       td.className = 'schedule-cell';
 
-      // 收集该日期在该小时的所有来访者
-      const hourVisitors = visitors.filter(v => {
-        if (v.date !== dateStr) return false;
-        const [startH] = v.startTime.split(':').map(Number);
-        return startH === slot.hour;
-      });
+      // 收集来访者
+      let dayVisitors = [];
+      if (slot.type === 'merged') {
+        // 合并时间段：收集该时间段内的所有来访者
+        dayVisitors = visitors.filter(v => {
+          if (v.date !== dateStr) return false;
+          const [startH] = v.startTime.split(':').map(Number);
+          return startH >= slot.startHour && startH < slot.endHour;
+        });
+      } else {
+        // 展开时间段：只收集该小时的来访者
+        dayVisitors = visitors.filter(v => {
+          if (v.date !== dateStr) return false;
+          const [startH] = v.startTime.split(':').map(Number);
+          return startH === slot.hour;
+        });
+      }
       // 按开始时间排序
-      hourVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
+      dayVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
       // 添加来访者容器
       const container = document.createElement('div');
       container.className = 'visitor-card-container';
 
       // 添加来访者卡片
-      hourVisitors.forEach(v => {
+      dayVisitors.forEach(v => {
         const card = document.createElement('div');
         card.className = 'visitor-card';
         card.onclick = () => openEditModal(v);
@@ -275,7 +286,7 @@ function renderSchedule() {
 // 获取智能时间槽
 function getTimeSlots(startHour, endHour) {
   const slots = [];
-  
+
   // 统计每个小时是否有来访
   const hourHasVisitors = {};
   for (let hour = startHour; hour < endHour; hour++) {
@@ -295,7 +306,8 @@ function getTimeSlots(startHour, endHour) {
           type: 'merged',
           label: `${String(mergedStart).padStart(2, '0')}:00-${String(hour).padStart(2, '0')}:00`,
           startHour: mergedStart,
-          endHour: hour
+          endHour: hour,
+          hour: null
         });
         mergedStart = null;
       }
@@ -312,14 +324,15 @@ function getTimeSlots(startHour, endHour) {
       }
     }
   }
-  
+
   // 处理最后的合并时间段
   if (mergedStart !== null) {
     slots.push({
       type: 'merged',
       label: `${String(mergedStart).padStart(2, '0')}:00-${String(endHour).padStart(2, '0')}:00`,
       startHour: mergedStart,
-      endHour: endHour
+      endHour: endHour,
+      hour: null
     });
   }
 
