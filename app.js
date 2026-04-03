@@ -58,9 +58,9 @@ function initTimePicker(hourPickerId, minutePickerId, outputId) {
   }
   hourPicker.innerHTML += '<div class="time-spacer"></div>';
 
-  // 生成分钟选项 (00-59)
+  // 生成分钟选项 (00-59, 每隔5分钟)
   minutePicker.innerHTML = '<div class="time-spacer"></div>';
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 60; i += 5) {
     const minute = String(i).padStart(2, '0');
     const option = document.createElement('div');
     option.className = 'time-option';
@@ -75,22 +75,28 @@ function initTimePicker(hourPickerId, minutePickerId, outputId) {
   }
   minutePicker.innerHTML += '<div class="time-spacer"></div>';
 
-  // 滚动事件
-  let scrollTimeout;
+  // 使用 requestAnimationFrame 优化滚动事件
+  let ticking = false;
   hourPicker.addEventListener('scroll', function() {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      snapToOption(this);
-      updateTimeOutput(hourPickerId, minutePickerId, outputId);
-    }, 100);
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        snapToOption(this);
+        updateTimeOutput(hourPickerId, minutePickerId, outputId);
+        ticking = false;
+      });
+      ticking = true;
+    }
   });
 
   minutePicker.addEventListener('scroll', function() {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      snapToOption(this);
-      updateTimeOutput(hourPickerId, minutePickerId, outputId);
-    }, 100);
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        snapToOption(this);
+        updateTimeOutput(hourPickerId, minutePickerId, outputId);
+        ticking = false;
+      });
+      ticking = true;
+    }
   });
 
   // 设置默认值
@@ -106,14 +112,20 @@ function setDefaultTime(hourPickerId, minutePickerId, outputId) {
 // 滚动到指定时间
 function scrollToTime(hourPickerId, minutePickerId, hours, minutes) {
   hours = Math.min(23, Math.max(0, hours));
-  minutes = Math.min(59, Math.max(0, minutes));
+  // 找到最接近的5分钟倍数
+  minutes = Math.round(minutes / 5) * 5;
+  minutes = Math.min(55, Math.max(0, minutes));
 
   const hourPicker = document.getElementById(hourPickerId);
   const minutePicker = document.getElementById(minutePickerId);
 
   setTimeout(() => {
-    hourPicker.scrollTop = (hours + 1) * 40 - 70;
-    minutePicker.scrollTop = (minutes + 1) * 40 - 70;
+    const optionHeight = 36;
+    const spacerHeight = 62;
+    
+    // 计算滚动位置
+    hourPicker.scrollTop = hours * optionHeight + spacerHeight - (hourPicker.clientHeight / 2) + (optionHeight / 2);
+    minutePicker.scrollTop = (minutes / 5) * optionHeight + spacerHeight - (minutePicker.clientHeight / 2) + (optionHeight / 2);
 
     // 更新选中状态
     hourPicker.querySelectorAll('.time-option').forEach(opt => {
@@ -123,21 +135,26 @@ function scrollToTime(hourPickerId, minutePickerId, hours, minutes) {
       opt.classList.toggle('selected', parseInt(opt.dataset.value) === minutes);
     });
 
-    updateTimeOutput(hourPickerId, minutePickerId, outputId);
+    updateTimeOutput(hourPickerId, minutePickerId, 'startTime');
   }, 50);
 }
 
 // 滚动对齐到选项
 function snapToOption(picker) {
-  const optionHeight = 40;
+  const optionHeight = 36;
+  const spacerHeight = 62;
   const scrollTop = picker.scrollTop;
-  const snappedScroll = Math.round(scrollTop / optionHeight) * optionHeight;
-  picker.scrollTop = snappedScroll;
-
+  
+  // 计算当前应该选中的选项索引
+  const selectedIndex = Math.round((scrollTop - spacerHeight / 2 + optionHeight / 2) / optionHeight);
+  
+  // 确保索引在有效范围内
+  const options = picker.querySelectorAll('.time-option');
+  const validIndex = Math.max(0, Math.min(options.length - 1, selectedIndex));
+  
   // 更新选中状态
-  const selectedIndex = Math.round((scrollTop + 70) / optionHeight) - 1;
-  picker.querySelectorAll('.time-option').forEach((opt, index) => {
-    opt.classList.toggle('selected', index === selectedIndex);
+  options.forEach((opt, index) => {
+    opt.classList.toggle('selected', index === validIndex);
   });
 }
 
@@ -459,20 +476,28 @@ function hasTimeConflict(excludeId, date, startTime, endTime) {
 // 保存来访者
 function saveVisitor() {
   const id = document.getElementById('visitorId').value;
+  const startTime = document.getElementById('startTime').value;
+  const endTime = document.getElementById('endTime').value;
+  
   const visitorData = {
     id: id || Date.now().toString(),
     name: document.getElementById('name').value,
     gender: selectedGender,
     phone: document.getElementById('phone').value,
     date: document.getElementById('date').value,
-    startTime: document.getElementById('startTime').value,
-    endTime: document.getElementById('endTime').value,
+    startTime: startTime,
+    endTime: endTime,
     notes: document.getElementById('notes').value
   };
 
   if (!visitorData.name || !visitorData.date || !visitorData.startTime) {
     alert('请填写必填项');
     return;
+  }
+
+  // 检查结束时间是否有效
+  if (!visitorData.endTime) {
+    visitorData.endTime = calculateEndTime(visitorData.startTime);
   }
 
   // 检查时间冲突
