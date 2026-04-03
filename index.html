@@ -177,19 +177,20 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(102, 126, 234, 0.1);
-      border: 1px dashed #667eea;
-      color: #667eea;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      font-size: 18px;
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 24px;
+      font-weight: bold;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
-      transition: opacity 0.2s;
+      transition: opacity 0.2s, color 0.2s;
+      padding: 0;
+      width: auto;
+      height: auto;
     }
 
     td:empty .cell-add-btn,
@@ -199,6 +200,10 @@
 
     td:has(.visitor-card) .cell-add-btn {
       opacity: 0;
+    }
+
+    .cell-add-btn:hover {
+      color: #666;
     }
 
     /* 模态框 */
@@ -499,8 +504,8 @@
           </div>
 
           <div class="form-group">
-            <label>结束时间</label>
-            <input type="text" id="endTimeDisplay" readonly style="background: #f5f5f5; text-align: center; font-size: 18px;" placeholder="自动计算（开始时间+50分钟）">
+            <label>结束时间（自动计算：开始时间+50分钟）</label>
+            <div id="endTimeDisplay" style="background: #f5f5f5; padding: 10px 12px; border-radius: 8px; text-align: center; font-size: 18px; color: #666;">--:--</div>
             <input type="hidden" id="endTime">
           </div>
 

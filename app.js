@@ -177,23 +177,27 @@ function renderSchedule() {
   const tbody = document.getElementById('scheduleBody');
   tbody.innerHTML = '';
 
-  // 时间范围：9点到22点（共14个小时槽）
-  const startHour = 9;
-  const endHour = 22;
+  // 时间范围：6点到23点（共18个小时）
+  const startHour = 6;
+  const endHour = 23;
 
-  // 为每个小时创建一行
-  for (let hour = startHour; hour < endHour; hour++) {
+  // 收集所有有来访的时间段
+  const timeSlots = getTimeSlots(startHour, endHour);
+
+  // 渲染时间槽
+  timeSlots.forEach(slot => {
     const tr = document.createElement('tr');
 
     // 时间列
     const timeTd = document.createElement('td');
     timeTd.className = 'time-col';
-    timeTd.textContent = `${String(hour).padStart(2, '0')}:00`;
+    timeTd.textContent = slot.label;
     timeTd.style.background = '#f8f9fa';
     timeTd.style.textAlign = 'center';
     timeTd.style.verticalAlign = 'middle';
     timeTd.style.fontSize = '12px';
     timeTd.style.color = '#666';
+    timeTd.style.padding = '8px 4px';
     tr.appendChild(timeTd);
 
     // 为每一天创建单元格
@@ -202,48 +206,107 @@ function renderSchedule() {
       date.setDate(date.getDate() + i);
       const dateStr = formatDate(date);
 
-      // 获取该日期在该小时的来访者
-      const hourVisitors = visitors.filter(v => {
-        if (v.date !== dateStr) return false;
-        const [startH] = v.startTime.split(':').map(Number);
-        return startH === hour;
-      });
-      // 按开始时间排序
-      hourVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
-
       const td = document.createElement('td');
 
-      // 创建容器
-      const container = document.createElement('div');
-      container.className = 'visitor-card-container';
+      if (slot.type === 'merged') {
+        // 合并时间段：显示提示
+        td.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">无来访</div>`;
+      } else {
+        // 展开时间段：显示来访者
+        const container = document.createElement('div');
+        container.className = 'visitor-card-container';
 
-      // 添加来访者卡片
-      hourVisitors.forEach(v => {
-        const card = document.createElement('div');
-        card.className = 'visitor-card';
-        card.onclick = () => openEditModal(v);
+        // 获取该日期在该小时的来访者
+        const hourVisitors = visitors.filter(v => {
+          if (v.date !== dateStr) return false;
+          const [startH] = v.startTime.split(':').map(Number);
+          return startH === slot.hour;
+        });
+        // 按开始时间排序
+        hourVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-        const genderClass = v.gender === '男' ? 'gender-m' : 'gender-f';
-        card.innerHTML = `
-          <div class="name">${v.name} <span class="${genderClass}">${v.gender || '女'}</span></div>
-          <div class="time">${v.startTime}-${v.endTime}</div>
-        `;
-        container.appendChild(card);
-      });
+        // 添加来访者卡片
+        hourVisitors.forEach(v => {
+          const card = document.createElement('div');
+          card.className = 'visitor-card';
+          card.onclick = () => openEditModal(v);
 
-      td.appendChild(container);
+          const genderClass = v.gender === '男' ? 'gender-m' : 'gender-f';
+          card.innerHTML = `
+            <div class="name">${v.name} <span class="${genderClass}">${v.gender || '女'}</span></div>
+            <div class="time">${v.startTime}-${v.endTime}</div>
+          `;
+          container.appendChild(card);
+        });
 
-      // 添加按钮
-      const addBtn = document.createElement('button');
-      addBtn.className = 'cell-add-btn';
-      addBtn.innerHTML = '+';
-      addBtn.onclick = () => openAddModal(dateStr);
-      td.appendChild(addBtn);
+        td.appendChild(container);
+
+        // 添加按钮 - 灰色加号
+        const addBtn = document.createElement('button');
+        addBtn.className = 'cell-add-btn';
+        addBtn.innerHTML = '+';
+        addBtn.onclick = () => openAddModal(dateStr);
+        td.appendChild(addBtn);
+      }
 
       tr.appendChild(td);
     }
     tbody.appendChild(tr);
+  });
+}
+
+// 获取智能时间槽
+function getTimeSlots(startHour, endHour) {
+  const slots = [];
+  
+  // 统计每个小时是否有来访
+  const hourHasVisitors = {};
+  for (let hour = startHour; hour < endHour; hour++) {
+    hourHasVisitors[hour] = visitors.some(v => {
+      const [startH] = v.startTime.split(':').map(Number);
+      return startH === hour;
+    });
   }
+
+  // 智能合并连续的空闲时间段
+  let mergedStart = null;
+  for (let hour = startHour; hour < endHour; hour++) {
+    if (hourHasVisitors[hour]) {
+      // 如果有未合并的时间段，先添加
+      if (mergedStart !== null) {
+        slots.push({
+          type: 'merged',
+          label: `${String(mergedStart).padStart(2, '0')}:00-${String(hour).padStart(2, '0')}:00`,
+          startHour: mergedStart,
+          endHour: hour
+        });
+        mergedStart = null;
+      }
+      // 添加有来访的小时
+      slots.push({
+        type: 'expanded',
+        label: `${String(hour).padStart(2, '0')}:00`,
+        hour: hour
+      });
+    } else {
+      // 开始或继续合并时间段
+      if (mergedStart === null) {
+        mergedStart = hour;
+      }
+    }
+  }
+  
+  // 处理最后的合并时间段
+  if (mergedStart !== null) {
+    slots.push({
+      type: 'merged',
+      label: `${String(mergedStart).padStart(2, '0')}:00-${String(endHour).padStart(2, '0')}:00`,
+      startHour: mergedStart,
+      endHour: endHour
+    });
+  }
+
+  return slots;
 }
 
 // 更新表头
@@ -409,12 +472,6 @@ function saveVisitor() {
 
   if (!visitorData.name || !visitorData.date || !visitorData.startTime) {
     alert('请填写必填项');
-    return;
-  }
-
-  // 验证结束时间大于开始时间
-  if (visitorData.endTime <= visitorData.startTime) {
-    alert('结束时间必须大于开始时间');
     return;
   }
 
