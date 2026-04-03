@@ -2,245 +2,530 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>心理咨询来访者记录系统</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>来访者记录</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      background-color: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f7fa;
+      height: 100vh;
+      overflow: hidden;
     }
+
+    /* 顶部导航栏 */
     .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 20px 0;
-      margin-bottom: 20px;
-    }
-    .schedule-container {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      padding: 20px;
-      overflow-x: auto;
-    }
-    .schedule-table {
-      min-width: 100%;
-    }
-    .schedule-table th {
-      background-color: #667eea;
-      color: white;
-      text-align: center;
-      vertical-align: middle;
-      padding: 12px 8px;
-    }
-    .schedule-table th .date-num {
-      font-size: 20px;
-      font-weight: bold;
-      display: block;
-    }
-    .schedule-table th .day-name {
-      font-size: 14px;
-      opacity: 0.9;
-    }
-    .schedule-table th.today {
-      background-color: #ff6b6b;
-    }
-    .schedule-table td {
-      border: 1px solid #e0e0e0;
-      vertical-align: top;
-      padding: 8px;
-      height: 100px;
-      width: 14%;
-      position: relative;
-    }
-    .time-slot {
-      font-size: 12px;
-      color: #666;
-      border-bottom: 1px dashed #eee;
-      padding: 4px;
-      min-height: 60px;
-    }
-    .visitor-card {
-      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-      border-radius: 6px;
-      padding: 6px;
-      margin-bottom: 4px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      border-left: 4px solid #667eea;
-      font-size: 12px;
-    }
-    .visitor-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    .visitor-card .name {
-      font-weight: bold;
-      font-size: 13px;
-      margin-bottom: 2px;
       display: flex;
       align-items: center;
-      gap: 4px;
+      justify-content: space-between;
+      padding: 0 10px;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    .visitor-card .time {
-      font-size: 11px;
-      color: #555;
-    }
-    .visitor-card .gender-m,
-    .visitor-card .gender-f {
-      padding: 1px 4px;
-      border-radius: 3px;
-      font-size: 10px;
-    }
-    .add-btn {
-      background: rgba(255,255,255,0.3);
-      border: 2px dashed rgba(255,255,255,0.5);
+
+    .nav-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
       color: white;
-      width: 100%;
-      height: 100%;
-      min-height: 80px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.2s;
+    }
+
+    .nav-btn:active {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .add-btn-top {
+      background: rgba(255,255,255,0.3);
+      border: 2px solid rgba(255,255,255,0.5);
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s;
     }
-    .add-btn:hover {
-      background: rgba(255,255,255,0.5);
-      border-color: white;
+
+    .add-btn-top:active {
+      background: rgba(255,255,255,0.4);
+      transform: scale(0.95);
     }
-    td:has(.visitor-card) .add-btn {
-      display: none;
+
+    /* 表格容器 */
+    .table-container {
+      position: fixed;
+      top: 50px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
     }
+
+    .schedule-table {
+      width: 100%;
+      height: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .schedule-table th {
+      background: #667eea;
+      color: white;
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      border: 1px solid #5a6fd6;
+    }
+
+    .schedule-table th .date-num {
+      font-size: 14px;
+      font-weight: bold;
+      display: block;
+    }
+
+    .schedule-table th .day-name {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .schedule-table th.today {
+      background: #ff6b6b;
+      border-color: #e55a5a;
+    }
+
+    .schedule-table td {
+      border: 1px solid #e0e0e0;
+      vertical-align: top;
+      padding: 4px;
+      height: 14%;
+      background: white;
+      position: relative;
+    }
+
     .visitor-card-container {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      max-height: 80px;
+      gap: 3px;
+      max-height: 100%;
       overflow-y: auto;
+      min-height: 30px;
     }
-    .nav-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+
+    .visitor-card {
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      border-radius: 4px;
+      padding: 4px 6px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-left: 3px solid #667eea;
+      font-size: 11px;
     }
-    .current-week {
-      font-size: 18px;
+
+    .visitor-card:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .visitor-card .name {
       font-weight: bold;
-      color: #333;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
     }
+
+    .visitor-card .time {
+      font-size: 10px;
+      color: #555;
+    }
+
+    .visitor-card .gender-m,
+    .visitor-card .gender-f {
+      padding: 1px 3px;
+      border-radius: 2px;
+      font-size: 9px;
+      background: rgba(255,255,255,0.6);
+    }
+
+    .cell-add-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(102, 126, 234, 0.1);
+      border: 1px dashed #667eea;
+      color: #667eea;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    td:empty .cell-add-btn,
+    td:has(.visitor-card-container:empty) .cell-add-btn {
+      opacity: 1;
+    }
+
+    td:has(.visitor-card) .cell-add-btn {
+      opacity: 0;
+    }
+
+    /* 模态框 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px 16px 0 0;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+      }
+      to {
+        transform: translateY(0);
+      }
+    }
+
     .modal-header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .btn-close-white {
-      filter: invert(1);
+
+    .modal-header h3 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 0 8px;
+    }
+
+    .modal-body {
+      padding: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .gender-group {
+      display: flex;
+      gap: 16px;
+    }
+
+    .gender-option {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .gender-option.active {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .gender-option input {
+      display: none;
+    }
+
+    /* 时间选择器 */
+    .time-picker-container {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .time-picker {
+      flex: 1;
+      max-width: 100px;
+      height: 180px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .time-picker-scroll {
+      height: 100%;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .time-picker-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .time-option {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      scroll-snap-align: center;
+      cursor: pointer;
+    }
+
+    .time-option.selected {
+      background: #667eea;
+      color: white;
+      border-radius: 8px;
+    }
+
+    .time-picker-label {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 40px;
+      transform: translateY(-50%);
+      border-top: 2px solid #667eea;
+      border-bottom: 2px solid #667eea;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .time-spacer {
+      height: 40px;
+    }
+
+    .modal-footer {
+      padding: 16px;
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid #eee;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn:active {
+      opacity: 0.8;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-danger {
+      background: #ff4757;
+      color: white;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
     }
   </style>
 </head>
 <body>
+  <!-- 顶部导航 -->
   <div class="header">
-    <div class="container">
-      <h1 class="text-center">📋 心理咨询来访者记录系统</h1>
-      <p class="text-center mb-0">像课表一样管理您的来访者预约</p>
-    </div>
+    <button class="nav-btn" onclick="changeWeek(-1)">上周</button>
+    <button class="add-btn-top" onclick="openAddModalForWeek()">+</button>
+    <button class="nav-btn" onclick="changeWeek(1)">下周</button>
   </div>
 
-  <div class="container">
-    <div class="nav-controls">
-      <button class="btn btn-outline-primary" onclick="changeWeek(-1)">← 上周</button>
-      <span class="current-week" id="currentWeek"></span>
-      <button class="btn btn-outline-primary" onclick="changeWeek(1)">下周 →</button>
-    </div>
-
-    <div class="schedule-container">
-      <table class="schedule-table">
-        <thead>
-          <tr>
-            <th style="width: 80px;">时间</th>
-            <th id="day0">周一</th>
-            <th id="day1">周二</th>
-            <th id="day2">周三</th>
-            <th id="day3">周四</th>
-            <th id="day4">周五</th>
-            <th id="day5">周六</th>
-            <th id="day6">周日</th>
-          </tr>
-        </thead>
-        <tbody id="scheduleBody">
-        </tbody>
-      </table>
-    </div>
+  <!-- 表格 -->
+  <div class="table-container">
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th id="day0">周一</th>
+          <th id="day1">周二</th>
+          <th id="day2">周三</th>
+          <th id="day3">周四</th>
+          <th id="day4">周五</th>
+          <th id="day5">周六</th>
+          <th id="day6">周日</th>
+        </tr>
+      </thead>
+      <tbody id="scheduleBody">
+      </tbody>
+    </table>
   </div>
 
   <!-- 添加/编辑模态框 -->
-  <div class="modal fade" id="visitorModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle">添加来访者</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <form id="visitorForm">
-            <input type="hidden" id="visitorId">
+  <div class="modal-overlay" id="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">添加来访者</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="visitorForm">
+          <input type="hidden" id="visitorId">
 
-            <div class="mb-3">
-              <label class="form-label">姓名 *</label>
-              <input type="text" class="form-control" id="name" required>
+          <div class="form-group">
+            <label>姓名 *</label>
+            <input type="text" id="name" required placeholder="请输入姓名">
+          </div>
+
+          <div class="form-group">
+            <label>性别</label>
+            <div class="gender-group">
+              <label class="gender-option" id="genderMLabel" onclick="selectGender('男')">
+                <input type="radio" name="gender" value="男">
+                <span>男</span>
+              </label>
+              <label class="gender-option active" id="genderFLabel" onclick="selectGender('女')">
+                <input type="radio" name="gender" value="女" checked>
+                <span>女</span>
+              </label>
             </div>
-            
-            <div class="mb-3">
-              <label class="form-label">性别</label>
-              <div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="gender" id="genderM" value="男">
-                  <label class="form-check-label" for="genderM">男</label>
+          </div>
+
+          <div class="form-group">
+            <label>联系电话</label>
+            <input type="tel" id="phone" placeholder="请输入联系电话">
+          </div>
+
+          <div class="form-group">
+            <label>日期 *</label>
+            <input type="date" id="date" required>
+          </div>
+
+          <div class="form-group">
+            <label>时间 *</label>
+            <div class="time-picker-container">
+              <div class="time-picker">
+                <div class="time-picker-label"></div>
+                <div class="time-picker-scroll" id="hourPicker">
+                  <!-- 小时选项将通过JS生成 -->
                 </div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="gender" id="genderF" value="女" checked>
-                  <label class="form-check-label" for="genderF">女</label>
+              </div>
+              <div class="time-picker">
+                <div class="time-picker-label"></div>
+                <div class="time-picker-scroll" id="minutePicker">
+                  <!-- 分钟选项将通过JS生成 -->
                 </div>
               </div>
             </div>
-            
-            <div class="mb-3">
-              <label class="form-label">联系电话</label>
-              <input type="tel" class="form-control" id="phone">
-            </div>
-            
-            <div class="mb-3">
-              <label class="form-label">日期 *</label>
-              <input type="date" class="form-control" id="date" required>
-            </div>
-            
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">开始时间 *</label>
-                <input type="time" class="form-control" id="startTime" required>
+            <input type="hidden" id="startTime">
+          </div>
+
+          <div class="form-group">
+            <label>结束时间</label>
+            <div class="time-picker-container">
+              <div class="time-picker">
+                <div class="time-picker-label"></div>
+                <div class="time-picker-scroll" id="endHourPicker">
+                  <!-- 小时选项将通过JS生成 -->
+                </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">结束时间</label>
-                <input type="time" class="form-control" id="endTime">
+              <div class="time-picker">
+                <div class="time-picker-label"></div>
+                <div class="time-picker-scroll" id="endMinutePicker">
+                  <!-- 分钟选项将通过JS生成 -->
+                </div>
               </div>
             </div>
-            
-            <div class="mb-3">
-              <label class="form-label">备注</label>
-              <textarea class="form-control" id="notes" rows="3"></textarea>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-          <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none;" onclick="deleteVisitor()">删除</button>
-          <button type="button" class="btn btn-primary" onclick="saveVisitor()">保存</button>
-        </div>
+            <input type="hidden" id="endTime">
+          </div>
+
+          <div class="form-group">
+            <label>备注</label>
+            <textarea id="notes" rows="3" placeholder="可选备注信息"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="deleteBtn" style="display:none;" onclick="deleteVisitor()">删除</button>
+        <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveVisitor()">保存</button>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

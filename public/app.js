@@ -1,29 +1,160 @@
 let currentWeekStart = getWeekStart(new Date());
 let visitors = [];
-let modal;
+let selectedGender = '女';
+let modalVisible = false;
 
 // 本地存储键名
 const STORAGE_KEY = 'visitor_records';
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
-  modal = new bootstrap.Modal(document.getElementById('visitorModal'));
-  
+  // 初始化时间选择器
+  initTimePicker('hourPicker', 'minutePicker', 'startTime');
+  initTimePicker('endHourPicker', 'endMinutePicker', 'endTime');
+
   // 开始时间改变时自动更新结束时间
   document.getElementById('startTime').addEventListener('change', function() {
     if (this.value) {
+      const [hours, minutes] = this.value.split(':').map(Number);
+      scrollToTime('endHourPicker', 'endMinutePicker', hours, minutes + 50);
       document.getElementById('endTime').value = calculateEndTime(this.value);
     }
   });
-  
-  // 日期改变时重新加载数据（确保显示正确的已有预约）
+
+  // 日期改变时重新加载数据
   document.getElementById('date').addEventListener('change', function() {
     loadVisitors();
   });
-  
+
+  // 点击模态框外部关闭
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeModal();
+    }
+  });
+
   loadVisitors();
   renderSchedule();
 });
+
+// 初始化时间选择器
+function initTimePicker(hourPickerId, minutePickerId, outputId) {
+  const hourPicker = document.getElementById(hourPickerId);
+  const minutePicker = document.getElementById(minutePickerId);
+
+  // 生成小时选项 (00-23)
+  hourPicker.innerHTML = '<div class="time-spacer"></div>';
+  for (let i = 0; i < 24; i++) {
+    const hour = String(i).padStart(2, '0');
+    const option = document.createElement('div');
+    option.className = 'time-option';
+    option.textContent = hour;
+    option.dataset.value = hour;
+    option.onclick = () => {
+      option.parentElement.querySelectorAll('.time-option').forEach(opt => opt.classList.remove('selected'));
+      option.classList.add('selected');
+      updateTimeOutput(hourPickerId, minutePickerId, outputId);
+    };
+    hourPicker.appendChild(option);
+  }
+  hourPicker.innerHTML += '<div class="time-spacer"></div>';
+
+  // 生成分钟选项 (00-59)
+  minutePicker.innerHTML = '<div class="time-spacer"></div>';
+  for (let i = 0; i < 60; i++) {
+    const minute = String(i).padStart(2, '0');
+    const option = document.createElement('div');
+    option.className = 'time-option';
+    option.textContent = minute;
+    option.dataset.value = minute;
+    option.onclick = () => {
+      option.parentElement.querySelectorAll('.time-option').forEach(opt => opt.classList.remove('selected'));
+      option.classList.add('selected');
+      updateTimeOutput(hourPickerId, minutePickerId, outputId);
+    };
+    minutePicker.appendChild(option);
+  }
+  minutePicker.innerHTML += '<div class="time-spacer"></div>';
+
+  // 滚动事件
+  let scrollTimeout;
+  hourPicker.addEventListener('scroll', function() {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      snapToOption(this);
+      updateTimeOutput(hourPickerId, minutePickerId, outputId);
+    }, 100);
+  });
+
+  minutePicker.addEventListener('scroll', function() {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      snapToOption(this);
+      updateTimeOutput(hourPickerId, minutePickerId, outputId);
+    }, 100);
+  });
+
+  // 设置默认值
+  setDefaultTime(hourPickerId, minutePickerId, outputId);
+}
+
+// 设置默认时间
+function setDefaultTime(hourPickerId, minutePickerId, outputId) {
+  const now = new Date();
+  scrollToTime(hourPickerId, minutePickerId, now.getHours(), now.getMinutes());
+}
+
+// 滚动到指定时间
+function scrollToTime(hourPickerId, minutePickerId, hours, minutes) {
+  hours = Math.min(23, Math.max(0, hours));
+  minutes = Math.min(59, Math.max(0, minutes));
+
+  const hourPicker = document.getElementById(hourPickerId);
+  const minutePicker = document.getElementById(minutePickerId);
+
+  setTimeout(() => {
+    hourPicker.scrollTop = (hours + 1) * 40 - 70;
+    minutePicker.scrollTop = (minutes + 1) * 40 - 70;
+
+    // 更新选中状态
+    hourPicker.querySelectorAll('.time-option').forEach(opt => {
+      opt.classList.toggle('selected', parseInt(opt.dataset.value) === hours);
+    });
+    minutePicker.querySelectorAll('.time-option').forEach(opt => {
+      opt.classList.toggle('selected', parseInt(opt.dataset.value) === minutes);
+    });
+
+    updateTimeOutput(hourPickerId, minutePickerId, outputId);
+  }, 50);
+}
+
+// 滚动对齐到选项
+function snapToOption(picker) {
+  const optionHeight = 40;
+  const scrollTop = picker.scrollTop;
+  const snappedScroll = Math.round(scrollTop / optionHeight) * optionHeight;
+  picker.scrollTop = snappedScroll;
+
+  // 更新选中状态
+  const selectedIndex = Math.round((scrollTop + 70) / optionHeight) - 1;
+  picker.querySelectorAll('.time-option').forEach((opt, index) => {
+    opt.classList.toggle('selected', index === selectedIndex);
+  });
+}
+
+// 更新时间输出
+function updateTimeOutput(hourPickerId, minutePickerId, outputId) {
+  const hourPicker = document.getElementById(hourPickerId);
+  const minutePicker = document.getElementById(minutePickerId);
+
+  const selectedHour = hourPicker.querySelector('.time-option.selected');
+  const selectedMinute = minutePicker.querySelector('.time-option.selected');
+
+  if (selectedHour && selectedMinute) {
+    const time = `${selectedHour.dataset.value}:${selectedMinute.dataset.value}`;
+    document.getElementById(outputId).value = time;
+  }
+}
 
 // 获取周的起始日期（周一）
 function getWeekStart(date) {
@@ -41,27 +172,74 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-// 格式化显示日期范围
-function displayWeekRange() {
-  const weekEnd = new Date(currentWeekStart);
-  weekEnd.setDate(weekEnd.getDate() + 6);
-  const startStr = formatDate(currentWeekStart);
-  const endStr = formatDate(weekEnd);
-  document.getElementById('currentWeek').textContent = `${startStr} ~ ${endStr}`;
-  
-  // 更新表头日期
+// 渲染课表
+function renderSchedule() {
+  updateHeader();
+  const tbody = document.getElementById('scheduleBody');
+  tbody.innerHTML = '';
+
+  // 为每一天创建一行
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(currentWeekStart);
+    date.setDate(date.getDate() + i);
+    const dateStr = formatDate(date);
+
+    const tr = document.createElement('tr');
+
+    // 获取该日期的所有来访者
+    const dayVisitors = visitors.filter(v => v.date === dateStr);
+    // 按开始时间排序
+    dayVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    const td = document.createElement('td');
+
+    // 创建容器
+    const container = document.createElement('div');
+    container.className = 'visitor-card-container';
+
+    // 添加来访者卡片
+    dayVisitors.forEach(v => {
+      const card = document.createElement('div');
+      card.className = 'visitor-card';
+      card.onclick = () => openEditModal(v);
+
+      const genderClass = v.gender === '男' ? 'gender-m' : 'gender-f';
+      card.innerHTML = `
+        <div class="name">${v.name} <span class="${genderClass}">${v.gender || '女'}</span></div>
+        <div class="time">${v.startTime}-${v.endTime}</div>
+      `;
+      container.appendChild(card);
+    });
+
+    td.appendChild(container);
+
+    // 添加按钮
+    const addBtn = document.createElement('button');
+    addBtn.className = 'cell-add-btn';
+    addBtn.innerHTML = '+';
+    addBtn.onclick = () => openAddModal(dateStr);
+    td.appendChild(addBtn);
+
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+}
+
+// 更新表头
+function updateHeader() {
   const today = formatDate(new Date());
+  const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
   for (let i = 0; i < 7; i++) {
     const date = new Date(currentWeekStart);
     date.setDate(date.getDate() + i);
     const dateStr = formatDate(date);
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-    
+
     const th = document.getElementById(`day${i}`);
     th.innerHTML = `<span class="date-num">${month}/${day}</span><span class="day-name">${dayNames[i]}</span>`;
-    
+
     // 标记今天
     if (dateStr === today) {
       th.classList.add('today');
@@ -89,7 +267,7 @@ function loadVisitors() {
   }
 }
 
-// 保存到来者数据到本地存储
+// 保存来访者数据到本地存储
 function saveVisitorsToStorage() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(visitors));
@@ -99,99 +277,58 @@ function saveVisitorsToStorage() {
   }
 }
 
-// 渲染课表
-function renderSchedule() {
-  displayWeekRange();
-  const tbody = document.getElementById('scheduleBody');
-  tbody.innerHTML = '';
-
-  const timeSlots = generateTimeSlots();
-
-  timeSlots.forEach(time => {
-    const tr = document.createElement('tr');
-
-    // 时间列
-    const timeTd = document.createElement('td');
-    timeTd.className = 'time-slot';
-    timeTd.textContent = time;
-    tr.appendChild(timeTd);
-
-    // 周一到周日
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(currentWeekStart);
-      date.setDate(date.getDate() + i);
-      const dateStr = formatDate(date);
-
-      const td = document.createElement('td');
-
-      // 创建容器
-      const container = document.createElement('div');
-      container.className = 'visitor-card-container';
-
-      // 获取该日期该时间段的来访者（精确匹配开始时间）
-      const slotVisitors = visitors.filter(v =>
-        v.date === dateStr && v.startTime === time
-      );
-
-      // 添加来访者卡片
-      slotVisitors.forEach(v => {
-        const card = document.createElement('div');
-        card.className = 'visitor-card';
-        card.onclick = () => openEditModal(v);
-
-        const genderClass = v.gender === '男' ? 'gender-m' : 'gender-f';
-        card.innerHTML = `
-          <div class="name">${v.name} <span class="${genderClass}">${v.gender || '女'}</span></div>
-          <div class="time">${v.startTime}-${v.endTime}</div>
-        `;
-        container.appendChild(card);
-      });
-
-      td.appendChild(container);
-
-      // 每个单元格都添加添加按钮
-      const addBtn = document.createElement('button');
-      addBtn.className = 'add-btn';
-      addBtn.innerHTML = '+ 添加';
-      addBtn.onclick = () => openAddModal(dateStr, time);
-      td.appendChild(addBtn);
-
-      tr.appendChild(td);
-    }
-
-    tbody.appendChild(tr);
-  });
-}
-
-// 生成时间段
-function generateTimeSlots() {
-  return ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '19:00', '20:00'];
-}
-
 // 计算结束时间（开始后 50 分钟）
 function calculateEndTime(startTime) {
   const [hours, minutes] = startTime.split(':').map(Number);
   const endDate = new Date();
   endDate.setHours(hours, minutes + 50, 0, 0);
-  
+
   const endHours = String(endDate.getHours()).padStart(2, '0');
   const endMinutes = String(endDate.getMinutes()).padStart(2, '0');
   return `${endHours}:${endMinutes}`;
 }
 
+// 选择性别
+function selectGender(gender) {
+  selectedGender = gender;
+  document.getElementById('genderMLabel').classList.toggle('active', gender === '男');
+  document.getElementById('genderFLabel').classList.toggle('active', gender === '女');
+  document.querySelector(`input[name="gender"][value="${gender}"]`).checked = true;
+}
+
+// 打开添加模态框（从周视图）
+function openAddModalForWeek() {
+  // 默认选择今天或周一
+  const today = new Date();
+  const todayStr = formatDate(today);
+  const weekEnd = new Date(currentWeekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
+  let selectedDate = today;
+  if (today < currentWeekStart || today > weekEnd) {
+    selectedDate = new Date(currentWeekStart);
+  }
+
+  openAddModal(formatDate(selectedDate));
+}
+
 // 打开添加模态框
-function openAddModal(date, time = '09:00') {
+function openAddModal(date) {
   document.getElementById('modalTitle').textContent = '添加来访者';
   document.getElementById('visitorId').value = '';
   document.getElementById('name').value = '';
   document.getElementById('phone').value = '';
   document.getElementById('notes').value = '';
   document.getElementById('date').value = date;
-  document.getElementById('startTime').value = time;
-  document.getElementById('endTime').value = calculateEndTime(time);
-  document.getElementById('genderF').checked = true;
+  selectGender('女');
   document.getElementById('deleteBtn').style.display = 'none';
-  modal.show();
+
+  // 设置默认时间
+  scrollToTime('hourPicker', 'minutePicker', 9, 0);
+  scrollToTime('endHourPicker', 'endMinutePicker', 9, 50);
+
+  modalVisible = true;
+  document.getElementById('modal').classList.add('active');
 }
 
 // 打开编辑模态框
@@ -199,20 +336,29 @@ function openEditModal(visitor) {
   document.getElementById('modalTitle').textContent = '编辑来访者';
   document.getElementById('visitorId').value = visitor.id;
   document.getElementById('name').value = visitor.name;
+  document.getElementById('phone').value = visitor.phone || '';
   document.getElementById('date').value = visitor.date;
-  document.getElementById('startTime').value = visitor.startTime;
-  document.getElementById('endTime').value = visitor.endTime;
-  document.getElementById('phone').value = visitor.phone;
-  document.getElementById('notes').value = visitor.notes;
+  document.getElementById('notes').value = visitor.notes || '';
 
-  if (visitor.gender === '男') {
-    document.getElementById('genderM').checked = true;
-  } else {
-    document.getElementById('genderF').checked = true;
-  }
+  selectGender(visitor.gender || '女');
+
+  // 设置时间
+  const [startHour, startMinute] = visitor.startTime.split(':').map(Number);
+  scrollToTime('hourPicker', 'minutePicker', startHour, startMinute);
+
+  const [endHour, endMinute] = visitor.endTime.split(':').map(Number);
+  scrollToTime('endHourPicker', 'endMinutePicker', endHour, endMinute);
 
   document.getElementById('deleteBtn').style.display = 'block';
-  modal.show();
+
+  modalVisible = true;
+  document.getElementById('modal').classList.add('active');
+}
+
+// 关闭模态框
+function closeModal() {
+  modalVisible = false;
+  document.getElementById('modal').classList.remove('active');
 }
 
 // 检查时间冲突
@@ -220,7 +366,6 @@ function hasTimeConflict(excludeId, date, startTime, endTime) {
   return visitors.some(v => {
     if (v.id === excludeId) return false;
     if (v.date !== date) return false;
-    // 时间重叠判断：(start1 < end2) && (end1 > start2)
     return v.startTime < endTime && v.endTime > startTime;
   });
 }
@@ -231,7 +376,7 @@ function saveVisitor() {
   const visitorData = {
     id: id || Date.now().toString(),
     name: document.getElementById('name').value,
-    gender: document.querySelector('input[name="gender"]:checked').value,
+    gender: selectedGender,
     phone: document.getElementById('phone').value,
     date: document.getElementById('date').value,
     startTime: document.getElementById('startTime').value,
@@ -252,9 +397,9 @@ function saveVisitor() {
 
   // 检查时间冲突
   if (hasTimeConflict(visitorData.id, visitorData.date, visitorData.startTime, visitorData.endTime)) {
-    const conflictTime = visitors.find(v => 
-      v.date === visitorData.date && 
-      v.startTime < visitorData.endTime && 
+    const conflictTime = visitors.find(v =>
+      v.date === visitorData.date &&
+      v.startTime < visitorData.endTime &&
       v.endTime > visitorData.startTime
     );
     alert(`该时间段已有预约：${conflictTime?.name} (${conflictTime?.startTime}-${conflictTime?.endTime})，请选择其他时间`);
@@ -273,7 +418,7 @@ function saveVisitor() {
   }
 
   saveVisitorsToStorage();
-  modal.hide();
+  closeModal();
   loadVisitors();
   renderSchedule();
 }
@@ -290,7 +435,7 @@ function deleteVisitor() {
   if (index !== -1) {
     visitors.splice(index, 1);
     saveVisitorsToStorage();
-    modal.hide();
+    closeModal();
     loadVisitors();
     renderSchedule();
   }
