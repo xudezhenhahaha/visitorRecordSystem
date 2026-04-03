@@ -12,18 +12,22 @@
 
 ## 使用方法
 
-### 方式一：GitHub Pages 部署（推荐）
+### GitHub Pages 部署
 
 1. 将此仓库 Fork 到您的 GitHub 账号
 2. 进入仓库设置 → Pages
-3. 选择部署来源为 GitHub Actions
-4. 推送代码到 main 分支即可自动部署
+3. 选择部署来源为 **Deploy from a branch**
+4. 选择分支为 `main`（或 `master`），文件夹选择 `/ (root)`
+5. 保存后等待几秒即可完成部署
+
+或者使用 GitHub Actions：
+- 推送代码到 main 分支，GitHub Actions 会自动构建和部署
 
 访问地址：`https://您的用户名.github.io/visitorRecordSystem/`
 
-### 方式二：本地访问
+### 本地访问
 
-直接在浏览器中打开 `public/index.html` 文件即可使用。
+直接在浏览器中打开 `index.html` 文件即可使用。
 
 ## 功能说明
 
