@@ -122,15 +122,19 @@
       border: 1px solid #e0e0e0;
       vertical-align: top;
       padding: 4px;
-      height: 60px;
+      height: 50px;
       background: white;
+      position: relative;
+    }
+
+    .schedule-cell {
       position: relative;
     }
 
     .visitor-card-container {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
       max-height: 100%;
       overflow-y: auto;
       min-height: 30px;
@@ -151,24 +155,41 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
-    .visitor-card .name {
-      font-weight: bold;
-      font-size: 12px;
+    .visitor-info {
       display: flex;
-      align-items: center;
-      gap: 3px;
+      flex-direction: column;
+      gap: 2px;
     }
 
-    .visitor-card .time {
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .info-name {
+      font-weight: bold;
+      font-size: 12px;
+      flex: 1;
+    }
+
+    .info-gender {
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-size: 10px;
+      background: rgba(255,255,255,0.6);
+    }
+
+    .info-time {
       font-size: 10px;
       color: #555;
     }
 
-    .visitor-card .gender-m,
-    .visitor-card .gender-f {
-      padding: 1px 3px;
+    .gender-m,
+    .gender-f {
+      padding: 1px 4px;
       border-radius: 2px;
-      font-size: 9px;
+      font-size: 10px;
       background: rgba(255,255,255,0.6);
     }
 
@@ -216,8 +237,8 @@
       bottom: 0;
       background: rgba(0,0,0,0.5);
       z-index: 200;
-      align-items: flex-end;
-      justify-content: center;
+      align-items: stretch;
+      justify-content: stretch;
     }
 
     .modal-overlay.active {
@@ -226,45 +247,42 @@
 
     .modal-content {
       background: white;
-      border-radius: 16px 16px 0 0;
       width: 100%;
-      max-height: 85vh;
+      height: 100%;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      animation: slideUp 0.3s ease;
-    }
-
-    @keyframes slideUp {
-      from {
-        transform: translateY(100%);
-      }
-      to {
-        transform: translateY(0);
-      }
     }
 
     .modal-header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 16px;
+      padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
     }
 
     .modal-header h3 {
       font-size: 18px;
       margin: 0;
+      text-align: center;
+      flex: 1;
     }
 
-    .modal-close {
+    .modal-back {
       background: none;
       border: none;
       color: white;
-      font-size: 28px;
+      font-size: 16px;
       cursor: pointer;
-      padding: 0 8px;
+      padding: 0;
+      white-space: nowrap;
+    }
+
+    .modal-header-spacer {
+      width: 60px;
     }
 
     .modal-body {
@@ -272,6 +290,20 @@
       flex: 1;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    .gender-form .gender-group {
+      flex-direction: column;
+      gap: 8px;
     }
 
     .form-group {
@@ -335,7 +367,7 @@
     .time-picker {
       flex: 1;
       max-width: 100px;
-      height: 160px;
+      height: 108px;
       position: relative;
       overflow: hidden;
     }
@@ -382,7 +414,7 @@
     }
 
     .time-spacer {
-      height: 62px;
+      height: 36px;
     }
 
     .modal-footer {
@@ -454,29 +486,32 @@
   <div class="modal-overlay" id="modal">
     <div class="modal-content">
       <div class="modal-header">
+        <button class="modal-back" onclick="closeModal()">&#8249; 返回</button>
         <h3 id="modalTitle">添加来访者</h3>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div class="modal-header-spacer"></div>
       </div>
       <div class="modal-body">
         <form id="visitorForm">
           <input type="hidden" id="visitorId">
 
-          <div class="form-group">
-            <label>姓名 *</label>
-            <input type="text" id="name" required placeholder="请输入姓名">
-          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>姓名 *</label>
+              <input type="text" id="name" required placeholder="请输入姓名">
+            </div>
 
-          <div class="form-group">
-            <label>性别</label>
-            <div class="gender-group">
-              <label class="gender-option" id="genderMLabel" onclick="selectGender('男')">
-                <input type="radio" name="gender" value="男">
-                <span>男</span>
-              </label>
-              <label class="gender-option active" id="genderFLabel" onclick="selectGender('女')">
-                <input type="radio" name="gender" value="女" checked>
-                <span>女</span>
-              </label>
+            <div class="form-group gender-form">
+              <label>性别</label>
+              <div class="gender-group">
+                <label class="gender-option" id="genderMLabel" onclick="selectGender('男')">
+                  <input type="radio" name="gender" value="男">
+                  <span>男</span>
+                </label>
+                <label class="gender-option active" id="genderFLabel" onclick="selectGender('女')">
+                  <input type="radio" name="gender" value="女" checked>
+                  <span>女</span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -517,7 +552,7 @@
 
           <div class="form-group">
             <label>备注</label>
-            <textarea id="notes" rows="3" placeholder="可选备注信息"></textarea>
+            <textarea id="notes" rows="2" placeholder="可选备注信息"></textarea>
           </div>
         </form>
       </div>

@@ -121,7 +121,7 @@ function scrollToTime(hourPickerId, minutePickerId, hours, minutes) {
 
   setTimeout(() => {
     const optionHeight = 36;
-    const spacerHeight = 62;
+    const spacerHeight = 36;
     
     // 计算滚动位置
     hourPicker.scrollTop = hours * optionHeight + spacerHeight - (hourPicker.clientHeight / 2) + (optionHeight / 2);
@@ -142,7 +142,7 @@ function scrollToTime(hourPickerId, minutePickerId, hours, minutes) {
 // 滚动对齐到选项
 function snapToOption(picker) {
   const optionHeight = 36;
-  const spacerHeight = 62;
+  const spacerHeight = 36;
   const scrollTop = picker.scrollTop;
   
   // 计算当前应该选中的选项索引
@@ -224,47 +224,47 @@ function renderSchedule() {
       const dateStr = formatDate(date);
 
       const td = document.createElement('td');
+      td.className = 'schedule-cell';
 
-      if (slot.type === 'merged') {
-        // 合并时间段：显示提示
-        td.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">无来访</div>`;
-      } else {
-        // 展开时间段：显示来访者
-        const container = document.createElement('div');
-        container.className = 'visitor-card-container';
+      // 收集该日期在该小时的所有来访者
+      const hourVisitors = visitors.filter(v => {
+        if (v.date !== dateStr) return false;
+        const [startH] = v.startTime.split(':').map(Number);
+        return startH === slot.hour;
+      });
+      // 按开始时间排序
+      hourVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-        // 获取该日期在该小时的来访者
-        const hourVisitors = visitors.filter(v => {
-          if (v.date !== dateStr) return false;
-          const [startH] = v.startTime.split(':').map(Number);
-          return startH === slot.hour;
-        });
-        // 按开始时间排序
-        hourVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
+      // 添加来访者容器
+      const container = document.createElement('div');
+      container.className = 'visitor-card-container';
 
-        // 添加来访者卡片
-        hourVisitors.forEach(v => {
-          const card = document.createElement('div');
-          card.className = 'visitor-card';
-          card.onclick = () => openEditModal(v);
+      // 添加来访者卡片
+      hourVisitors.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'visitor-card';
+        card.onclick = () => openEditModal(v);
 
-          const genderClass = v.gender === '男' ? 'gender-m' : 'gender-f';
-          card.innerHTML = `
-            <div class="name">${v.name} <span class="${genderClass}">${v.gender || '女'}</span></div>
-            <div class="time">${v.startTime}-${v.endTime}</div>
-          `;
-          container.appendChild(card);
-        });
+        card.innerHTML = `
+          <div class="visitor-info">
+            <div class="info-row">
+              <span class="info-name">${v.name}</span>
+              <span class="info-gender ${v.gender === '男' ? 'gender-m' : 'gender-f'}">${v.gender || '女'}</span>
+            </div>
+            <div class="info-time">${v.startTime}-${v.endTime}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
 
-        td.appendChild(container);
+      td.appendChild(container);
 
-        // 添加按钮 - 灰色加号
-        const addBtn = document.createElement('button');
-        addBtn.className = 'cell-add-btn';
-        addBtn.innerHTML = '+';
-        addBtn.onclick = () => openAddModal(dateStr);
-        td.appendChild(addBtn);
-      }
+      // 添加按钮 - 细线加号
+      const addBtn = document.createElement('button');
+      addBtn.className = 'cell-add-btn';
+      addBtn.innerHTML = '+';
+      addBtn.onclick = () => openAddModal(dateStr);
+      td.appendChild(addBtn);
 
       tr.appendChild(td);
     }
