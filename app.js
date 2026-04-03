@@ -8,16 +8,15 @@ const STORAGE_KEY = 'visitor_records';
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
-  // 初始化时间选择器
+  // 初始化时间选择器（只需要开始时间）
   initTimePicker('hourPicker', 'minutePicker', 'startTime');
-  initTimePicker('endHourPicker', 'endMinutePicker', 'endTime');
 
   // 开始时间改变时自动更新结束时间
   document.getElementById('startTime').addEventListener('change', function() {
     if (this.value) {
-      const [hours, minutes] = this.value.split(':').map(Number);
-      scrollToTime('endHourPicker', 'endMinutePicker', hours, minutes + 50);
-      document.getElementById('endTime').value = calculateEndTime(this.value);
+      const endTime = calculateEndTime(this.value);
+      document.getElementById('endTime').value = endTime;
+      document.getElementById('endTimeDisplay').value = endTime;
     }
   });
 
@@ -178,49 +177,71 @@ function renderSchedule() {
   const tbody = document.getElementById('scheduleBody');
   tbody.innerHTML = '';
 
-  // 为每一天创建一行
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(currentWeekStart);
-    date.setDate(date.getDate() + i);
-    const dateStr = formatDate(date);
+  // 时间范围：9点到22点（共14个小时槽）
+  const startHour = 9;
+  const endHour = 22;
 
+  // 为每个小时创建一行
+  for (let hour = startHour; hour < endHour; hour++) {
     const tr = document.createElement('tr');
 
-    // 获取该日期的所有来访者
-    const dayVisitors = visitors.filter(v => v.date === dateStr);
-    // 按开始时间排序
-    dayVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    // 时间列
+    const timeTd = document.createElement('td');
+    timeTd.className = 'time-col';
+    timeTd.textContent = `${String(hour).padStart(2, '0')}:00`;
+    timeTd.style.background = '#f8f9fa';
+    timeTd.style.textAlign = 'center';
+    timeTd.style.verticalAlign = 'middle';
+    timeTd.style.fontSize = '12px';
+    timeTd.style.color = '#666';
+    tr.appendChild(timeTd);
 
-    const td = document.createElement('td');
+    // 为每一天创建单元格
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(currentWeekStart);
+      date.setDate(date.getDate() + i);
+      const dateStr = formatDate(date);
 
-    // 创建容器
-    const container = document.createElement('div');
-    container.className = 'visitor-card-container';
+      // 获取该日期在该小时的来访者
+      const hourVisitors = visitors.filter(v => {
+        if (v.date !== dateStr) return false;
+        const [startH] = v.startTime.split(':').map(Number);
+        return startH === hour;
+      });
+      // 按开始时间排序
+      hourVisitors.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-    // 添加来访者卡片
-    dayVisitors.forEach(v => {
-      const card = document.createElement('div');
-      card.className = 'visitor-card';
-      card.onclick = () => openEditModal(v);
+      const td = document.createElement('td');
 
-      const genderClass = v.gender === '男' ? 'gender-m' : 'gender-f';
-      card.innerHTML = `
-        <div class="name">${v.name} <span class="${genderClass}">${v.gender || '女'}</span></div>
-        <div class="time">${v.startTime}-${v.endTime}</div>
-      `;
-      container.appendChild(card);
-    });
+      // 创建容器
+      const container = document.createElement('div');
+      container.className = 'visitor-card-container';
 
-    td.appendChild(container);
+      // 添加来访者卡片
+      hourVisitors.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'visitor-card';
+        card.onclick = () => openEditModal(v);
 
-    // 添加按钮
-    const addBtn = document.createElement('button');
-    addBtn.className = 'cell-add-btn';
-    addBtn.innerHTML = '+';
-    addBtn.onclick = () => openAddModal(dateStr);
-    td.appendChild(addBtn);
+        const genderClass = v.gender === '男' ? 'gender-m' : 'gender-f';
+        card.innerHTML = `
+          <div class="name">${v.name} <span class="${genderClass}">${v.gender || '女'}</span></div>
+          <div class="time">${v.startTime}-${v.endTime}</div>
+        `;
+        container.appendChild(card);
+      });
 
-    tr.appendChild(td);
+      td.appendChild(container);
+
+      // 添加按钮
+      const addBtn = document.createElement('button');
+      addBtn.className = 'cell-add-btn';
+      addBtn.innerHTML = '+';
+      addBtn.onclick = () => openAddModal(dateStr);
+      td.appendChild(addBtn);
+
+      tr.appendChild(td);
+    }
     tbody.appendChild(tr);
   }
 }
@@ -325,7 +346,8 @@ function openAddModal(date) {
 
   // 设置默认时间
   scrollToTime('hourPicker', 'minutePicker', 9, 0);
-  scrollToTime('endHourPicker', 'endMinutePicker', 9, 50);
+  document.getElementById('endTimeDisplay').value = '';
+  document.getElementById('endTime').value = '';
 
   modalVisible = true;
   document.getElementById('modal').classList.add('active');
@@ -346,8 +368,9 @@ function openEditModal(visitor) {
   const [startHour, startMinute] = visitor.startTime.split(':').map(Number);
   scrollToTime('hourPicker', 'minutePicker', startHour, startMinute);
 
-  const [endHour, endMinute] = visitor.endTime.split(':').map(Number);
-  scrollToTime('endHourPicker', 'endMinutePicker', endHour, endMinute);
+  // 显示结束时间（只读）
+  document.getElementById('endTimeDisplay').value = visitor.endTime;
+  document.getElementById('endTime').value = visitor.endTime;
 
   document.getElementById('deleteBtn').style.display = 'block';
 

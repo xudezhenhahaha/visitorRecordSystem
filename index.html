@@ -53,22 +53,17 @@
 
     .add-btn-top {
       background: rgba(255,255,255,0.3);
-      border: 2px solid rgba(255,255,255,0.5);
+      border: none;
       color: white;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      font-size: 24px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
+      transition: background 0.2s;
     }
 
     .add-btn-top:active {
       background: rgba(255,255,255,0.4);
-      transform: scale(0.95);
     }
 
     /* 表格容器 */
@@ -86,6 +81,15 @@
       height: 100%;
       border-collapse: collapse;
       table-layout: fixed;
+    }
+
+    .schedule-table th.time-col {
+      background: #f0f0f0;
+      color: #666;
+      width: 60px;
+      min-width: 60px;
+      font-size: 11px;
+      font-weight: normal;
     }
 
     .schedule-table th {
@@ -118,7 +122,7 @@
       border: 1px solid #e0e0e0;
       vertical-align: top;
       padding: 4px;
-      height: 14%;
+      height: 60px;
       background: white;
       position: relative;
     }
@@ -411,7 +415,7 @@
   <!-- 顶部导航 -->
   <div class="header">
     <button class="nav-btn" onclick="changeWeek(-1)">上周</button>
-    <button class="add-btn-top" onclick="openAddModalForWeek()">+</button>
+    <button class="add-btn-top" onclick="openAddModalForWeek()">添加来访</button>
     <button class="nav-btn" onclick="changeWeek(1)">下周</button>
   </div>
 
@@ -420,6 +424,7 @@
     <table class="schedule-table">
       <thead>
         <tr>
+          <th class="time-col">时间</th>
           <th id="day0">周一</th>
           <th id="day1">周二</th>
           <th id="day2">周三</th>
@@ -495,20 +500,7 @@
 
           <div class="form-group">
             <label>结束时间</label>
-            <div class="time-picker-container">
-              <div class="time-picker">
-                <div class="time-picker-label"></div>
-                <div class="time-picker-scroll" id="endHourPicker">
-                  <!-- 小时选项将通过JS生成 -->
-                </div>
-              </div>
-              <div class="time-picker">
-                <div class="time-picker-label"></div>
-                <div class="time-picker-scroll" id="endMinutePicker">
-                  <!-- 分钟选项将通过JS生成 -->
-                </div>
-              </div>
-            </div>
+            <input type="text" id="endTimeDisplay" readonly style="background: #f5f5f5; text-align: center; font-size: 18px;" placeholder="自动计算（开始时间+50分钟）">
             <input type="hidden" id="endTime">
           </div>
 
